@@ -1,0 +1,21 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 9170be7..3093e3c 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,4 +1,4 @@
+-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
++cmake_minimum_required(VERSION 3.19 FATAL_ERROR)
+ 
+ if (POLICY CMP0075)
+   cmake_policy(SET CMP0075 NEW)
+@@ -1061,8 +1061,8 @@ foreach (man ${mans})
+ endforeach()
+ 
+ set(prefix ${CMAKE_INSTALL_PREFIX})
+-cmake_path(APPEND libdir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_LIBDIR}")
+-cmake_path(APPEND includedir_for_pc_file "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
++set(libdir_for_pc_file "${prefix}/${CMAKE_INSTALL_LIBDIR}")
++set(includedir_for_pc_file "${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+ configure_file(getdns.pc.in getdns.pc @ONLY)
+ 
+ # Installing.
