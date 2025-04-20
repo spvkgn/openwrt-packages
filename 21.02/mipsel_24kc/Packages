@@ -1,0 +1,26 @@
+Package: getdns
+Version: 1.7.3-1
+Depends: libc, libopenssl1.1
+License: BSD-3-Clause
+Section: libs
+Architecture: mipsel_24kc
+Installed-Size: 162488
+Filename: getdns_1.7.3-1_mipsel_24kc.ipk
+Size: 162450
+SHA256sum: d9a48c9557bc30e655dc394d82b60c2181cddeb262b5982d58205de0aa211e73
+Description:  This package contains the getdns library (libgetdns).
+ This package also contains the "getdns_query" command line wrapper for getdns exposing the features of this implementation (both in the official API and the additional API functions).
+
+Package: stubby
+Version: 0.4.3-1
+Depends: libc, libyaml, getdns, ca-certs
+License: BSD-3-Clause
+Section: net
+Architecture: mipsel_24kc
+Installed-Size: 18388
+Filename: stubby_0.4.3-1_mipsel_24kc.ipk
+Size: 19257
+SHA256sum: 4dfeedea95a6da63a4695341287b68d152c59a3a55bdad8b1cec436fd28fc87f
+Description:  This package contains the Stubby daemon (which utilizes the getdns library).
+ See https://github.com/openwrt/packages/blob/master/net/stubby/files/README.md for more details.
+
