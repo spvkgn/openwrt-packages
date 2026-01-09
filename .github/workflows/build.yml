@@ -1,0 +1,89 @@
+name: Build
+
+on:
+  workflow_dispatch:
+
+jobs:
+  pre:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.package.outputs.matrix }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Get package names
+      id: package
+      run: echo "matrix=$(ls -Igolang package | jq -cnR '[inputs | select(length>0)]')" >> $GITHUB_OUTPUT
+
+  build:
+    name: '${{ matrix.package }} :: ${{ matrix.branch }} :: ${{ matrix.arch }}'
+    needs: pre
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package:
+          - ${{ fromJson(needs.pre.outputs.matrix) }}
+        branch:
+          - openwrt-24.10
+        arch:
+          - aarch64_cortex-a53
+          # - mipsel_24kc
+      fail-fast: false
+    defaults: { run: { shell: bash } }
+    container:
+      image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.branch }}
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up SDK
+        if: matrix.branch == 'openwrt-23.05' || matrix.branch == 'openwrt-24.10' || matrix.branch == 'openwrt-25.12'
+        working-directory: /builder
+        run: HOME=/builder ./setup.sh
+
+      - name: Build packages
+        id: build
+        working-directory: /builder
+        env:
+          ARCH: ${{ matrix.arch }}
+          BRANCH: ${{ matrix.branch }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGN_KEY: ${{ secrets.SIGN_PRIVATE_KEY }}
+        run: |
+          mv feeds.conf.default feeds.conf
+          sed -e 's|base.*\.git|base https://github.com/openwrt/openwrt.git|' \
+              -e 's|packages.*\.git|packages https://github.com/openwrt/packages.git|' \
+              -e 's|luci.*\.git|luci https://github.com/openwrt/luci.git|' \
+              -e 's|routing.*\.git|routing https://github.com/openwrt/routing.git|' \
+              -e 's|telephony.*\.git|telephony https://github.com/openwrt/telephony.git|' -i feeds.conf
+          echo "src-link repo $GITHUB_WORKSPACE/package" > feeds.conf.local
+
+          ./scripts/feeds update base packages luci repo
+          ./scripts/feeds install -a -p repo
+          make defconfig
+          make package/${{ matrix.package }}/compile -j$(nproc) BUILD_LOG=1
+          ls -lh ./bin/packages/*/repo
+          # rm -rf ./bin/packages/*/base/*
+          # mv ./bin/packages/*/repo/*.ipk ./bin/packages/*/base
+          echo "$SIGN_KEY" | base64 -d > key-build
+          make package/index
+          tar -C ./bin/packages/*/base -cvf $GITHUB_WORKSPACE/pkg-$BRANCH-$ARCH.tar --transform "s|^\./|${BRANCH/openwrt-}/$ARCH/|" --show-transformed-names .
+
+      - name: Compress build logs
+        if: always()
+        run: tar -cJvf logs-${{ matrix.branch }}-${{ matrix.arch }}.tar.xz /builder/logs
+
+      - name: Upload packages
+        if: steps.build.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pkg-${{ matrix.branch }}-${{ matrix.arch }}
+          path: pkg-*.tar
+          if-no-files-found: error
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ matrix.branch }}-${{ matrix.arch }}
+          path: logs-*.tar.xz
