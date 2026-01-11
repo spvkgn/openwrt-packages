@@ -4,9 +4,11 @@ PKG_NAME:=sing-box
 PKG_VERSION:=1.12.12-extended-1.5.1
 PKG_RELEASE:=1
 
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE:=$(PKG_NAME)-extended-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=https://codeload.github.com/shtorm-7/sing-box-extended/tar.gz/v$(PKG_VERSION)?
 PKG_HASH:=ca21ab6e1febbb09240e47ed02b4856f6d8747efca8c71b25975e26477910d0f
+
+PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-extended-$(PKG_VERSION)
 
 PKG_LICENSE:=GPL-3.0-or-later
 PKG_LICENSE_FILES:=LICENSE
@@ -22,35 +24,45 @@ GO_PKG_BUILD_PKG:=$(GO_PKG)/cmd/sing-box
 GO_PKG_LDFLAGS_X:=$(GO_PKG)/constant.Version=$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/package.mk
-include ../../lang/golang/golang-package.mk
+include $(TOPDIR)/feeds/packages/lang/golang/golang-package.mk
+
+define Build/Prepare
+	$(call Build/Prepare/Default)
+	@echo "=== Debug information ==="
+	@echo "PKG_BUILD_DIR: $(PKG_BUILD_DIR)"
+	@echo "Directory exists: $(shell test -d $(PKG_BUILD_DIR) && echo YES || echo NO)"
+	@echo "go.mod exists: $(shell test -f $(PKG_BUILD_DIR)/go.mod && echo YES || echo NO)"
+	@echo "go.mod content (first line): $(shell head -1 $(PKG_BUILD_DIR)/go.mod 2>/dev/null || echo 'NOT FOUND')"
+	@echo "=== End debug ==="
+endef
 
 define Package/sing-box-default
-  TITLE:=The universal proxy platform
-  SECTION:=net
-  CATEGORY:=Network
-  URL:=https://sing-box.sagernet.org
-  DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +kmod-inet-diag +kmod-tun
-  USERID:=sing-box=5566:sing-box=5566
+	TITLE:=The universal proxy platform
+	SECTION:=net
+	CATEGORY:=Network
+	URL:=https://sing-box.sagernet.org
+	DEPENDS:=$(GO_ARCH_DEPENDS) +ca-bundle +kmod-inet-diag +kmod-tun
+	USERID:=sing-box=5566:sing-box=5566
 endef
 
 define Package/sing-box
-  $(Package/sing-box-default)
-  TITLE+= (full)
-  VARIANT:=full
-  DEFAULT_VARIANT:=1
+	$(Package/sing-box-default)
+	TITLE+= (full)
+	VARIANT:=full
+	DEFAULT_VARIANT:=1
 endef
 
 define Package/sing-box/description
-  Sing-box is a universal proxy platform which supports hysteria, SOCKS, Shadowsocks,
-  ShadowTLS, Tor, trojan, VLess, VMess, WireGuard and so on.
+	Sing-box is a universal proxy platform which supports hysteria, SOCKS, Shadowsocks,
+	ShadowTLS, Tor, trojan, VLess, VMess, WireGuard and so on.
 endef
 
 define Package/sing-box-tiny
-  $(Package/sing-box-default)
-  TITLE+= (tiny)
-  PROVIDES:=sing-box
-  VARIANT:=tiny
-  CONFLICTS:=sing-box
+	$(Package/sing-box-default)
+	TITLE+= (tiny)
+	PROVIDES:=sing-box
+	VARIANT:=tiny
+	CONFLICTS:=sing-box
 endef
 
 Package/sing-box-tiny/description:=$(Package/sing-box/description)
