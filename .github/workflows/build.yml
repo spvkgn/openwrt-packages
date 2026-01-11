@@ -56,15 +56,14 @@ jobs:
               -e 's|luci.*\.git|luci https://github.com/openwrt/luci.git|' \
               -e 's|routing.*\.git|routing https://github.com/openwrt/routing.git|' \
               -e 's|telephony.*\.git|telephony https://github.com/openwrt/telephony.git|' -i feeds.conf
-          echo "src-link repo $GITHUB_WORKSPACE/package" > feeds.conf.local
+          sed -i "1isrc-link repo $GITHUB_WORKSPACE/package" feeds.conf
 
           ./scripts/feeds update base packages luci repo
           ./scripts/feeds install -a -p repo
           make defconfig
           make package/${{ matrix.package }}/compile -j$(nproc) BUILD_LOG=1
-          ls -lh ./bin/packages/*/repo
-          # rm -rf ./bin/packages/*/base/*
-          # mv ./bin/packages/*/repo/*.ipk ./bin/packages/*/base
+          rm -rf ./bin/packages/*/base/*
+          mv ./bin/packages/*/repo/${{ matrix.package }}*.ipk ./bin/packages/*/base
           echo "$SIGN_KEY" | base64 -d > key-build
           make package/index
           tar -C ./bin/packages/*/base -cvf $GITHUB_WORKSPACE/pkg-$BRANCH-$ARCH.tar --transform "s|^\./|${BRANCH/openwrt-}/$ARCH/|" --show-transformed-names .
